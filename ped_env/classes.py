@@ -146,7 +146,7 @@ class PedsRLHandler(PedsHandlerInterface):
     def set_follower_action(self, ped:Person, action, group:Group, exit_pos):
         diff = group.get_distance_to_leader(ped)
         if not group.leader.is_done:
-            if diff < 2:
+            if diff < 1:
                 ped.person_state = PersonState.follow_leader
                 control_dir = parse_discrete_action(action) if self.env.discrete else action
                 leader_dir = calculate_nij(group.leader, ped)
@@ -187,6 +187,9 @@ class PedsRLHandler(PedsHandlerInterface):
             path.calculate_vec_dir_in_path()
             ped.a_star_path = path
         return int_pos_j
+    # def get_follower_d_star_path(self, ped, pos_i, pos_j, force=False):
+    #     int_pos_i = (int(pos_i[0]), int(pos_i[1]))
+    #     int_pos_j = (int(pos_j[0]), int(pos_j[1]))
 
 # r_arrival=10, r_move = -0.1, r_wait = -0.5, r_collision=-1
     def get_reward(self, ped:Person, ped_index:int, time):

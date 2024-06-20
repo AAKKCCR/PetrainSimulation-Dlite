@@ -58,8 +58,16 @@ class PedsMoveEnvFactory():
             start_pos.append((new_x, new_y))
         return self.create_people(start_pos, exit_type, test_mode)
 
-    def set_group_process(self, group, groups, group_dic, persons):
-        leader = random.sample(group, 1)[0]  # 随机选取一人作为leader
+    def set_group_process(self, group, groups, group_dic, persons,terrain):
+        distance = 1000
+        for person in group:
+            ax,ay = person.getX,person.getY
+            bx,by = terrain.exits[person.exit_type-3]
+            d = ((ax - bx)**2 + (ay - by)**2)**0.5
+            if d < distance:
+                leader = person
+                distance = d
+        #leader = random.sample(group, 1)[0]  # 随机选取一人作为leader
         followers = copy.copy(group)
         followers.remove(leader)
         group_obj = Group(leader, followers)
@@ -88,7 +96,12 @@ class PedsMoveEnvFactory():
     def create_group_persons_in_rect_neat(self):
         pass
 
-
+    def random_create_single_persons(self, start_point_dic, radius, person_num, exit_type, test_mode=False):
+        start_pos = []
+        for i in range(person_num):
+            new_x, new_y = random.sample(start_point_dic[exit_type], 1)[0]
+            start_pos.append((new_x, new_y))
+        return self.create_people(start_pos, exit_type, test_mode)
 
     #随机选择生成中心？
     def random_create_persons(self, terrain:Map, idx, person_num, groups, group_dic, group_size, start_point_dic, test_mode=False):
@@ -104,8 +117,8 @@ class PedsMoveEnvFactory():
             #         break
             exit_type = terrain.get_random_exit(idx)
             new_x, new_y = random.sample(start_point_dic[exit_type], 1)[0]
-            group = self.inner_create_persons_in_radius((new_x, new_y), self.GROUP_SIZE, num, exit_type, test_mode)
-            self.set_group_process(group, groups, group_dic, persons)
+            group = self.random_create_single_persons(start_point_dic,self.GROUP_SIZE, num, exit_type, test_mode)
+            self.set_group_process(group, groups, group_dic, persons,terrain)
         print(persons)
         return persons
 
@@ -118,8 +131,8 @@ class PedsMoveEnv(gym.Env):
 
     def __init__(self,
                  terrain: Map,
-                 person_num = 10,
-                 group_size:Tuple = (1,6),
+                 person_num = 20,
+                 group_size:Tuple = (1,20),
                  discrete = True,
                  frame_skipping = 8,
                  maxStep = 3000,
@@ -187,6 +200,7 @@ class PedsMoveEnv(gym.Env):
         self.isfirst = True
 
         self.Policy = None
+        self.leave_num = 0
 
     def start(self, maps: np.ndarray, spawn_maps: np.ndarray, person_num_sum: int = 60):
         self.world = b2World(gravity=(0, 0), doSleep=True)
@@ -415,6 +429,7 @@ class PedsMoveEnv(gym.Env):
         for ped in self.peds:#在get_rewards之后进行以使到达状态可以被检查
             if ped.is_done and not ped.has_removed:  # 移除到达出口的leader和follower
                 self.delete_person(ped)
+                self.leave_num+=1
                 continue
 
         if planning_mode and self.left_leader_num < self.agent_count:

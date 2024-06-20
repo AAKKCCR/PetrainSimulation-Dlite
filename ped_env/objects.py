@@ -17,6 +17,8 @@ from ped_env.utils.colors import ColorRed, exit_type_to_color, ColorYellow
 from ped_env.functions import transfer_to_render, normalized, ij_power
 from ped_env.utils.misc import FixtureInfo, ObjectType
 
+waterdepth = 50
+
 class Agent():
 
     @property
@@ -60,6 +62,8 @@ class Person(Agent):
     tau = 0.5
     Af = 0.01610612736
     Bf = 3.93216
+    age = 20
+    height = 175
 
     counter = 0  # 用于记录智能体编号
     body_pic = None
@@ -151,6 +155,8 @@ class Person(Agent):
 
         self.exit_in_step = -1
 
+
+
     def update(self, exits, step_in_env, map:ndarray):
         if self.is_done and self.has_removed:
             self.x, self.y = 0, 0
@@ -196,6 +202,7 @@ class Person(Agent):
 
     def self_driven_force(self, direction):
         #给行人施加自驱动力，力的大小为force * self.desired_velocity * self.mass / self.tau
+        self.CalculateSpeed()
         d_v = direction * self.desired_velocity
         applied_force = (d_v - self.vec) * self.mass / self.tau
         self.total_force += applied_force
@@ -226,24 +233,51 @@ class Person(Agent):
         self.fiw_force_last_eps = total_force
         self.total_force += total_force
 
+
+    #坐标原点为左下角，b2Vec2第一个值为X轴，第二个值为Y轴方向上的力。
     def flood_force(self):
         # d_v = direction * self.desired_velocity
         # applied_force = ([0.1,0.1] - self.vec) * self.mass / self.tau
         # self.total_force += applied_force
         #
-        total_force = b2Vec2(0, 0)
-        pos = (self.getX, self.getY)
-        dis = ((pos[0]) ** 2 + (pos[1] - 1) ** 2) ** 0.5
-        fij = 100
-        total_force += b2Vec2(0,fij)
-        self.fij_force_last_eps = total_force
-        self.total_force += total_force
+        C = 1.2
+        A = 3.14 * math.pow(self.radius, 2)
+        flood_force = -1/2 *C *A *math.pow(self.desired_velocity,2)
+        self.total_force += flood_force
+
+        # total_force = b2Vec2(0, 0)
+        # pos = (self.getX, self.getY)
+        # dis = ((pos[0]) ** 2 + (pos[1] - 1) ** 2) ** 0.5
+        # fij = 1
+        # total_force += b2Vec2(-fij,0)
+        # self.fij_force_last_eps = total_force
+        # self.total_force += total_force
 
     def ij_group_force(self, group):
         if self.is_leader:
             raise Exception("只能为follower添加成员力!")
         total_ij_group_f = group.get_group_force(self)
         self.total_force += total_ij_group_f
+
+    def CalculateSpeed(self):
+        if 0<=self.height-waterdepth and self.height-waterdepth<=92.5 :
+            self.desired_velocity = 0.97
+        elif 92.5 < self.height - waterdepth and self.height - waterdepth <= 103.5:
+            self.desired_velocity = 1
+        elif 103.5 < self.height - waterdepth and self.height - waterdepth <= 112.5:
+            self.desired_velocity = 1.04
+        elif 112.5 < self.height - waterdepth and self.height - waterdepth <= 124.5:
+            self.desired_velocity = 1.13
+        elif 124.5 < self.height - waterdepth and self.height - waterdepth <= 136.5:
+            if self.age <= 25.5:
+                self.desired_velocity = 1.24
+            elif self.age >= 25.5:
+                self.desired_velocity = 1.49
+        elif 136.5 < self.height - waterdepth:
+            if self.age <=35.5:
+                self.desired_velocity = 1.35
+            elif self.age>=35.5:
+                self.desired_velocity = 1.72
 
     def aabb_query(self, world, size, detect_type:ObjectType = ObjectType.Agent, test_mode=False):
         '''

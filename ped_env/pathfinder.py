@@ -285,7 +285,7 @@ class AStarController(gym.Env):
             #      .format(self.env.listener.col_with_agent, self.env.listener.col_with_wall))
             print("所有智能体在{}步后离开环境,离开用时为{},两者比值为{}!".format(step, endtime - starttime, step / (endtime - starttime)))
 
-class AStarPolicy():
+class DStarPolicy():
     vec_to_discrete_action_dic = {
         (0, 0): 0,
         (1, 0): 1,
@@ -435,6 +435,57 @@ class AStarPolicy():
 
         return True
 
+class AStarPolicy():
+    vec_to_discrete_action_dic = {
+        (0, 0): 0,
+        (1, 0): 1,
+        (1, 1): 2,
+        (0, 1): 3,
+        (-1, 1): 4,
+        (-1, 0): 5,
+        (-1, -1): 6,
+        (0, -1): 7,
+        (1, -1): 8
+    }
+
+    def __init__(self, terrain):
+        self.map = terrain.map
+        self.planner = AStar(terrain)
+        self.exit_tree = kdtree.create(terrain.exits)
+        print(terrain)
+        print(self.exit_tree)
+        #print(self.exit_tree)
+        self.planner.calculate_dir_vector()
+
+    def is_pos_vaild(self, pos):
+        pos_x, pos_y = pos
+        if pos_x < 0 or pos_x >= self.map.shape[0] or pos_y < 0 or pos_y >= self.map.shape[1]:
+            return False
+        if self.map[pos_x, pos_y] != 0:
+            return False
+        return True
+
+    def step(self, obs):
+        actions = []
+        for ob in obs:
+            pos_x, pos_y = ob[0:2] #得到智能体当前位置
+            pos_integer = [int(pos_x), int(pos_y)]
+            rx, ry = ob[4:6] #得到相对于出口的距离
+            ex = pos_x + rx
+            ey = pos_y + ry
+            exit = self.exit_tree.search_nn((ex, ey))[0].data #寻找相对最近的节点
+            if self.is_pos_vaild(pos_integer):
+                #获得下一步向量
+                dir = self.planner.dir_vector_matrix_dic[exit][pos_integer[0]][pos_integer[1]]
+            else:
+                dir = 0
+            action = np.zeros([ACTION_DIM])#一个3x3矩阵
+            if dir != 0:
+                # print(dir)
+                # print(self.vec_to_discrete_action_dic[dir])
+                action[self.vec_to_discrete_action_dic[dir]] = 1.0
+            actions.append(action)
+        return actions
 
 def recoder_for_debug(*obj):
     pass

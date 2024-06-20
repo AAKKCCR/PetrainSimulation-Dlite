@@ -428,13 +428,13 @@ test_map = np.array([
     [2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
 ])
 
-map0111 = np.loadtxt("E:/论文/PedestrainSimulation -test-/ped_env/data/data.txt", dtype=np.int32, encoding='UTF-8',delimiter=',')
+map0111 = np.loadtxt("E:/论文/PedestrainSimulation -test-/ped_env/data/matrix.txt", dtype=np.int32, encoding='UTF-8',delimiter=',')
 #print(map0111)
-map0111_spawn=np.loadtxt("E:/论文/PedestrainSimulation -test-/ped_env/data/data1.txt", dtype=np.int32, encoding='UTF-8',delimiter=',')
+map0111_spawn=np.loadtxt("E:/论文/PedestrainSimulation -test-/ped_env/data/matrix_new.txt", dtype=np.int32, encoding='UTF-8',delimiter=',')
 #print(map0111_spawn)
 start_points_map0111 = [(1, 1),(1, 1)]
-exit_map0111 = [(6.5,39.5),(6.5,0.5)]
-random_exits0111 = [[3], [4]]
+exit_map0111 = [(6.5,39.5)]#先列再行，行转置+0.5
+random_exits0111 = [[3], [3]]
 radius_map0111=1
 map_0111 = Map(map0111, exit_map0111,start_points_map0111,random_exits0111,"map_0111",radius_map0111,map0111_spawn)
 #map_01 =  Map(map1, exit_map1, start_points_map1, random_exits1, "map_01", radius_map1)

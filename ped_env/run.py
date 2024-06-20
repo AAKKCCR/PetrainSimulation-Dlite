@@ -1,6 +1,7 @@
 import Box2D as b2d
 
 from ped_env.envs import PedsMoveEnv as Env
+from ped_env.pathfinder import DStarPolicy
 from ped_env.pathfinder import AStarPolicy
 from ped_env.utils.maps import *
 from rl.utils.classes import make_parallel_env, PedsMoveInfoDataHandler
@@ -137,11 +138,13 @@ def test5():
 
     debug = False
 
-    person_num = 16
-    env = Env(map_0111, person_num, group_size=(4, 4), frame_skipping=8, maxStep=2000, debug_mode=debug, random_init_mode=True)
+    person_num = 100
+    env = Env(map_0111, person_num, group_size=(4, 4), frame_skipping=8, maxStep=5000, debug_mode=debug, random_init_mode=True)
     leader_num = env.agent_count
-    policy = AStarPolicy(env)
+    policy = DStarPolicy(env)
     env.Policy = policy
+    times = []
+    num = []
     for epoch in range(1):
         starttime = time.time()
         step = 0
@@ -165,13 +168,55 @@ def test5():
                 #     policy.setObstacle()
                 step += env.frame_skipping
                 j = j+1
+                time_in_env = env.step_in_env * 1 / 50
+                times.append(time_in_env)
+                num.append(env.leave_num)
         endtime = time.time()
         print("智能体与智能体碰撞次数为{},与墙碰撞次数为{}!"
               .format(env.col_with_agent, env.col_with_wall))
         print("所有智能体在{}步后离开环境,离开用时为{},两者比值为{}!".format(step, endtime - starttime, step / (endtime - starttime)))
+        print(times)
+        print(num)
 
+def test6():
+    import time
+
+    debug = False
+
+    person_num = 100
+    env = Env(map_0111, person_num, group_size=(50, 50), frame_skipping=8, maxStep=5000, debug_mode=debug, random_init_mode=True)
+    leader_num = env.agent_count
+    policy = AStarPolicy(env.terrain)
+
+    times = []
+    num = []
+    for epoch in range(1):
+        starttime = time.time()
+        step = 0
+        # reset函数返回所有行人leader的当前位置，当前速度以及相对目标的位置
+        obs = env.reset()
+        is_done = [False]
+        while env.leave_num != person_num:
+            action = policy.step(obs) #获得了所有leader的下一步的方向
+            for i in range(1):
+                obs, reward, is_done, info = env.step(action)
+                env.render()
+                if env.leave_num == person_num:
+                    break
+                if debug:
+                    env.debug_step()
+                step += env.frame_skipping
+                time_in_env = env.step_in_env * 1 / 50
+                times.append(time_in_env)
+                num.append(env.leave_num)
+        endtime = time.time()
+        print("智能体与智能体碰撞次数为{},与墙碰撞次数为{}!"
+              .format(env.col_with_agent, env.col_with_wall))
+        print("所有智能体在{}步后离开环境,离开用时为{},两者比值为{}!".format(step, endtime - starttime, step / (endtime - starttime)))
+        print(times)
+        print(num)
 if __name__ == '__main__':
-    test5()
+    test6()
 
     # import kdtree
     # points = []
